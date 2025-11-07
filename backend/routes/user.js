@@ -2,17 +2,11 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const authenticateToken = require('../middleware/authenticateToken'); // Import the middleware
+const User = require('../models/User');
+const authenticateToken = require('../middleware/authenticateToken');
 
-// In-memory user store for INSY7314 Task 2 - No MongoDB required
-// This demonstrates all security features without external database dependencies
-const useMemory = true;
+// Password pepper for enhanced security
 const pepper = process.env.PASSWORD_PEPPER || '';
-const memStore = { users: [] };
-const nextId = () => (Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
-const memExistsAccountNumber = async (acc) => memStore.users.some(u => u.accountNumber === acc);
-const memFindByUsername = async (un) => memStore.users.find(u => u.username === un) || null;
-const memFindByAccountNumber = async (acc) => memStore.users.find(u => u.accountNumber === acc) || null;
 
 // Server-side whitelist patterns
 const patterns = {
@@ -35,67 +29,15 @@ const createErrorResponse = (res, code, message, details) => {
   return res.status(code).json({ error: message });
 };
 
-// Register
+// REGISTRATION DISABLED FOR TASK 3 - Users are pre-configured
 router.post('/register', async (req, res) => {
-  const { name, idNumber, username, password, confirmPassword } = req.body;
-
-  if (!name || !idNumber || !username || !password || !confirmPassword) {
-    return createErrorResponse(res, 400, 'Please fill out all the fields before registering.');
-  }
-
-  if (password !== confirmPassword) {
-    return createErrorResponse(res, 400, 'Passwords do not match. Please try again.');
-  }
-
-  // Whitelist validation
-  if (!patterns.name.test(name)) return createErrorResponse(res, 400, 'Name contains invalid characters.');
-  if (!patterns.idNumber.test(idNumber)) return createErrorResponse(res, 400, 'ID number must be up to 13 digits.');
-  if (!patterns.username.test(username)) return createErrorResponse(res, 400, 'Username must be 3-20 letters/digits/_.');
-  if (!patterns.password.test(password)) return createErrorResponse(res, 400, 'Password does not meet complexity requirements.');
-
-  try {
-    const generateCandidate = () => {
-      const base = Date.now().toString().slice(-8);
-      const rand = Math.floor(Math.random() * 9000 + 1000).toString();
-      return '62' + base + rand.slice(0, 2); // 12-digit account number
-    };
-
-    let generatedAccountNumber = null;
-    for (let i = 0; i < 5; i++) {
-      const candidate = generateCandidate();
-      const exists = await memExistsAccountNumber(candidate);
-      if (!exists) { generatedAccountNumber = candidate; break; }
-    }
-    if (!generatedAccountNumber) {
-      return createErrorResponse(res, 500, 'Could not generate account number, please try again.');
-    }
-
-    // Store user in memory with enhanced security (bcrypt + salt + pepper)
-    const passwordHash = await bcrypt.hash(password + pepper, 12);
-    const newUser = {
-      _id: nextId(),
-      name,
-      idNumber,
-      username,
-      accountNumber: generatedAccountNumber,
-      password: passwordHash,
-    };
-    memStore.users.push(newUser);
-
-    res.status(201).json({ message: 'You have successfully registered! You can now log in.', accountNumber: generatedAccountNumber });
-  } catch (error) {
-    console.error('Error occurred during registration:', error);
-
-    // Send the full error message back for debugging (temporarily)
-    return res.status(500).json({
-      error: 'Something went wrong during registration.',
-      details: error.message, // Include more details about the error
-    });
-  }
+  return res.status(403).json({
+    error: 'Registration is disabled. Please contact your administrator for account access.'
+  });
 });
 
 
-// Login
+// Login - MongoDB version
 router.post('/login', async (req, res) => {
   const { username, accountNumber, password } = req.body;
 
@@ -114,10 +56,10 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    // Find user in memory store
+    // Find user in MongoDB
     const user = accountNumber
-      ? await memFindByAccountNumber(accountNumber)
-      : await memFindByUsername(username);
+      ? await User.findOne({ accountNumber })
+      : await User.findOne({ username });
 
     if (!user) {
       return res.status(404).json({ error: 'Account not found' });
@@ -129,34 +71,41 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid password' });
     }
 
-    // Generate a JWT token
+    // Generate a JWT token with role information
     const token = jwt.sign(
-      { id: user._id, username: user.username, accountNumber: user.accountNumber },
+      {
+        id: user._id,
+        username: user.username,
+        accountNumber: user.accountNumber,
+        role: user.role
+      },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '8h' }
     );
 
-    // Return the JWT token and a success message
-    res.status(200).json({ message: 'Login successful', token });
+    // Return the JWT token, role, and success message
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      role: user.role,
+      username: user.username,
+      accountNumber: user.accountNumber
+    });
   } catch (error) {
     console.error('Error during login:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-module.exports = router;
-
-// Profile - Get user profile from memory store
+// Profile - Get user profile from MongoDB
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const user = memStore.users.find(u => u._id === req.user.id);
+    const user = await User.findById(req.user.id).select('-password');
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Return user data without password
-    const { password, ...safeUserData } = user;
-    res.json(safeUserData);
+    res.json(user);
   } catch (error) {
     console.error('Error fetching user profile:', error);
     res.status(500).json({ error: 'Internal server error' });

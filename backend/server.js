@@ -10,12 +10,24 @@ const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const ExpressBrute = require('express-brute');
+const mongoose = require('mongoose');
 const userRoutes = require('./routes/user');
 
 dotenv.config();
 const app = express();
 
-console.log('🚀 INSY7314 Task 2 - Running in memory-only mode (no MongoDB required)');
+console.log('🚀 INSY7314 Task 3 - Employee Portal with MongoDB');
+
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('✅ MongoDB Connected Successfully'))
+.catch(err => {
+  console.error('❌ MongoDB Connection Error:', err);
+  process.exit(1);
+});
 
 // Middlewares
 app.set('trust proxy', 1);
