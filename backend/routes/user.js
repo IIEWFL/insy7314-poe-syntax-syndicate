@@ -14,7 +14,7 @@ const patterns = {
   idNumber: /^[0-9]{1,13}$/,
   username: /^[A-Za-z0-9_]{3,20}$/,
   accountNumber: /^[0-9]{8,20}$/,
-  password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,72}$/,
+  password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&+=!]).{8,72}$/,
 };
 
 
@@ -67,6 +67,7 @@ router.post('/login', async (req, res) => {
 
     // Validate password with pepper enhancement
     const isMatch = await bcrypt.compare(password + pepper, user.password);
+
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid password' });
     }

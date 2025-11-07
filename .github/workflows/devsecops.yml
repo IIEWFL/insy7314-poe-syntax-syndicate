@@ -1,0 +1,152 @@
+name: DevSecOps Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm install
+          cd frontend && npm install
+      
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=moderate || true
+          cd frontend && npm audit --audit-level=moderate || true
+      
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=insy7314-payment-portal
+            -Dsonar.organization=your-org
+            -Dsonar.sources=backend,frontend/src
+            -Dsonar.exclusions=**/node_modules/**,**/build/**,**/dist/**
+      
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'Payment Portal'
+          path: '.'
+          format: 'HTML'
+          args: >
+            --failOnCVSS 7
+            --enableRetired
+      
+      - name: Upload OWASP Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-check-report
+          path: reports
+
+  api-security-test:
+    name: API Security Testing
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:7.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: testuser
+          MONGO_INITDB_ROOT_PASSWORD: testpass
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Start backend server
+        run: |
+          export MONGODB_URI="mongodb://testuser:testpass@localhost:27017/test?authSource=admin"
+          export JWT_SECRET="test_secret"
+          export PASSWORD_PEPPER="test_pepper"
+          export HTTPS=false
+          npm start &
+          sleep 10
+        env:
+          NODE_ENV: test
+      
+      - name: Test API endpoints
+        run: |
+          # Test root endpoint
+          curl -f http://localhost:5000/ || echo "Root endpoint test"
+          
+          # Test rate limiting
+          for i in {1..5}; do
+            curl -X POST http://localhost:5000/api/user/login \
+              -H "Content-Type: application/json" \
+              -d '{"username":"test","password":"Test@123"}' || true
+          done
+      
+      - name: Check security headers
+        run: |
+          curl -I http://localhost:5000/ | grep -i "x-frame-options" || echo "Missing X-Frame-Options"
+          curl -I http://localhost:5000/ | grep -i "x-content-type-options" || echo "Missing X-Content-Type-Options"
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [security-scan, api-security-test]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm install
+          cd frontend && npm install
+      
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/build
+

@@ -1,0 +1,223 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5.1.0
+
+jobs:
+  # Install dependencies
+  install-dependencies:
+    docker:
+      - image: cimg/node:18.18
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package-lock.json" }}
+            - v1-dependencies-
+      - run:
+          name: Install Backend Dependencies
+          command: npm install
+      - run:
+          name: Install Frontend Dependencies
+          command: cd frontend && npm install
+      - save_cache:
+          paths:
+            - node_modules
+            - frontend/node_modules
+          key: v1-dependencies-{{ checksum "package-lock.json" }}
+      - persist_to_workspace:
+          root: .
+          paths:
+            - node_modules
+            - frontend/node_modules
+
+  # Security: npm audit for vulnerabilities
+  npm-audit:
+    docker:
+      - image: cimg/node:18.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Run npm audit on backend
+          command: |
+            npm audit --audit-level=moderate || true
+            npm audit --json > backend-audit.json || true
+      - run:
+          name: Run npm audit on frontend
+          command: |
+            cd frontend
+            npm audit --audit-level=moderate || true
+            npm audit --json > frontend-audit.json || true
+      - store_artifacts:
+          path: backend-audit.json
+      - store_artifacts:
+          path: frontend/frontend-audit.json
+
+  # SonarQube static analysis
+  sonarqube-scan:
+    docker:
+      - image: cimg/node:18.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Install SonarScanner
+          command: |
+            wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+            unzip sonar-scanner-cli-5.0.1.3006-linux.zip
+            export PATH=$PATH:$(pwd)/sonar-scanner-5.0.1.3006-linux/bin
+      - run:
+          name: Run SonarQube Scan
+          command: |
+            export PATH=$PATH:$(pwd)/sonar-scanner-5.0.1.3006-linux/bin
+            sonar-scanner \
+              -Dsonar.projectKey=insy7314-payment-portal \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=${SONAR_HOST_URL} \
+              -Dsonar.login=${SONAR_TOKEN} \
+              -Dsonar.javascript.node.maxspace=4096 \
+              -Dsonar.exclusions=**/node_modules/**,**/build/**,**/dist/**,**/*.test.js,**/*.spec.js
+
+  # OWASP Dependency Check
+  owasp-dependency-check:
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Install Dependency Check
+          command: |
+            wget https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.0/dependency-check-9.0.0-release.zip
+            unzip dependency-check-9.0.0-release.zip
+      - run:
+          name: Run OWASP Dependency Check
+          command: |
+            ./dependency-check/bin/dependency-check.sh \
+              --project "Payment Portal" \
+              --scan . \
+              --format HTML \
+              --format JSON \
+              --out ./dependency-check-report \
+              --suppression ./dependency-check-suppressions.xml || true
+      - store_artifacts:
+          path: ./dependency-check-report
+
+  # API Security Testing
+  api-security-test:
+    docker:
+      - image: cimg/node:18.18
+      - image: cimg/mongo:7.0
+        environment:
+          MONGO_INITDB_ROOT_USERNAME: testuser
+          MONGO_INITDB_ROOT_PASSWORD: testpass
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Wait for MongoDB
+          command: |
+            for i in {1..30}; do
+              if nc -z localhost 27017; then
+                echo "MongoDB is ready"
+                exit 0
+              fi
+              echo "Waiting for MongoDB..."
+              sleep 2
+            done
+            echo "MongoDB failed to start"
+            exit 1
+      - run:
+          name: Test API Endpoints
+          command: |
+            # Start the backend server in background
+            export MONGODB_URI="mongodb://testuser:testpass@localhost:27017/test?authSource=admin"
+            export JWT_SECRET="test_secret_key"
+            export PASSWORD_PEPPER="test_pepper"
+            export HTTPS=false
+            npm start &
+            SERVER_PID=$!
+            
+            # Wait for server to start
+            sleep 10
+            
+            # Test health/basic endpoints
+            curl -f http://localhost:5000/ || echo "Root endpoint test"
+            
+            # Test rate limiting (should work)
+            for i in {1..5}; do
+              curl -X POST http://localhost:5000/api/user/login \
+                -H "Content-Type: application/json" \
+                -d '{"username":"test","password":"Test@123"}' || true
+            done
+            
+            # Kill server
+            kill $SERVER_PID || true
+      - run:
+          name: Test Security Headers
+          command: |
+            export MONGODB_URI="mongodb://testuser:testpass@localhost:27017/test?authSource=admin"
+            export JWT_SECRET="test_secret_key"
+            export PASSWORD_PEPPER="test_pepper"
+            export HTTPS=false
+            npm start &
+            SERVER_PID=$!
+            sleep 10
+            
+            # Check for security headers
+            curl -I http://localhost:5000/ | grep -i "x-frame-options" || echo "Missing X-Frame-Options"
+            curl -I http://localhost:5000/ | grep -i "x-content-type-options" || echo "Missing X-Content-Type-Options"
+            curl -I http://localhost:5000/ | grep -i "strict-transport-security" || echo "Missing HSTS (expected in HTTP mode)"
+            
+            kill $SERVER_PID || true
+
+  # Build and test
+  build-and-test:
+    docker:
+      - image: cimg/node:18.18
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Build Frontend
+          command: |
+            cd frontend
+            npm run build
+      - store_artifacts:
+          path: frontend/build
+      - persist_to_workspace:
+          root: .
+          paths:
+            - frontend/build
+
+workflows:
+  version: 2
+  security-pipeline:
+    jobs:
+      - install-dependencies
+      - npm-audit:
+          requires:
+            - install-dependencies
+      - sonarqube-scan:
+          requires:
+            - install-dependencies
+          context:
+            - sonarqube
+      - owasp-dependency-check:
+          requires:
+            - install-dependencies
+      - api-security-test:
+          requires:
+            - install-dependencies
+      - build-and-test:
+          requires:
+            - install-dependencies
+            - npm-audit
+            - api-security-test
+

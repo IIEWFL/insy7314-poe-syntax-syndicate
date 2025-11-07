@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Badge, Table, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Badge, Table } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   FaWallet,
@@ -11,12 +12,12 @@ import {
   FaCheckCircle,
   FaExclamationTriangle,
   FaPlus,
-  FaDownload,
   FaEye
 } from 'react-icons/fa';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Update time every second
@@ -107,23 +108,7 @@ const Dashboard = () => {
           </Col>
         </Row>
 
-        {/* Task 3 Notice */}
-        <Row className="mb-4">
-          <Col>
-            <Alert variant="info" className="border-0 shadow-sm">
-              <div className="d-flex align-items-center">
-                <FaExclamationTriangle className="text-info me-3" style={{ fontSize: '1.5rem' }} />
-                <div>
-                  <h5 className="alert-heading mb-1">Coming Soon - Task 3!</h5>
-                  <p className="mb-0">
-                    Full transaction functionality will be available in Task 3. 
-                    Currently showing demo data for testing purposes.
-                  </p>
-                </div>
-              </div>
-            </Alert>
-          </Col>
-        </Row>
+
 
         {/* Balance Card */}
         <Row className="mb-4">
@@ -147,16 +132,15 @@ const Dashboard = () => {
                   </Col>
                   <Col md={4} className="text-center">
                     <div className="mb-3">
-                      <Button 
-                        variant="outline-light" 
-                        size="lg" 
-                        className="mb-2 w-100"
-                        disabled
+                      <Button
+                        variant="outline-light"
+                        size="lg"
+                        className="w-100"
+                        onClick={() => navigate('/payment')}
                       >
                         <FaPaperPlane className="me-2" />
                         Send Money
                       </Button>
-                      <small className="d-block text-white-50">Coming in Task 3</small>
                     </div>
                   </Col>
                 </Row>
@@ -168,13 +152,12 @@ const Dashboard = () => {
             <Card className="card-custom h-100">
               <Card.Body className="p-4 text-center">
                 <FaChartLine className="text-primary-orange mb-3" style={{ fontSize: '3rem' }} />
-                <h5 className="fw-bold mb-2">Account Performance</h5>
-                <p className="text-muted mb-3">Track your transaction history</p>
-                <Button variant="outline-primary" disabled>
+                <h5 className="fw-bold mb-2">Payment History</h5>
+                <p className="text-muted mb-3">View all your payments</p>
+                <Button variant="outline-primary" onClick={() => navigate('/payment')}>
                   <FaEye className="me-2" />
-                  View Analytics
+                  View Payments
                 </Button>
-                <small className="d-block text-muted mt-2">Coming in Task 3</small>
               </Card.Body>
             </Card>
           </Col>
@@ -209,13 +192,14 @@ const Dashboard = () => {
                     <p className="text-muted mb-0">Your latest payment activity</p>
                   </div>
                   <div>
-                    <Button variant="outline-primary" size="sm" className="me-2" disabled>
-                      <FaDownload className="me-1" />
-                      Export
-                    </Button>
-                    <Button variant="primary" size="sm" className="btn-primary-orange" disabled>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="btn-primary-orange"
+                      onClick={() => navigate('/payment')}
+                    >
                       <FaPlus className="me-1" />
-                      New Transaction
+                      New Payment
                     </Button>
                   </div>
                 </div>
@@ -264,17 +248,7 @@ const Dashboard = () => {
                     ))}
                   </tbody>
                 </Table>
-                
-                {/* Coming Soon Footer */}
-                <div className="p-4 bg-light text-center border-top">
-                  <p className="text-muted mb-2">
-                    <FaClock className="me-2" />
-                    Full transaction management coming in Task 3
-                  </p>
-                  <small className="text-muted">
-                    This is demo data for testing the user interface and authentication system.
-                  </small>
-                </div>
+
               </Card.Body>
             </Card>
           </Col>

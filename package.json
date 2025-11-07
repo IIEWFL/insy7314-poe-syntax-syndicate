@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js",
+    "seed": "node backend/scripts/seedUsers.js",
     "frontend": "cd frontend && npm start",
     "install-frontend": "cd frontend && npm install"
   },

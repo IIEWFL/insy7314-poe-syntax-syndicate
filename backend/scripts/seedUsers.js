@@ -3,55 +3,56 @@ const bcrypt = require('bcrypt');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Load environment variables
-dotenv.config({ path: path.join(__dirname, '../.env') });
+// Load environment variables from root directory
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const User = require('../models/User');
 
 const pepper = process.env.PASSWORD_PEPPER || '';
+console.log('🌶️  Using pepper:', pepper ? 'YES' : 'NO');
 
-// Pre-configured users for Task 3
+// Pre-configured users for Task 3 - South African names
 const users = [
   // Customer accounts
   {
-    name: 'John Customer',
+    name: 'Thabo Mokoena',
     idNumber: '9001015800081',
-    username: 'john_customer',
+    username: 'thabo_mokoena',
     accountNumber: '6200000001',
-    password: 'Customer@123',
+    password: 'Thabo@2024',
     role: 'customer'
   },
   {
-    name: 'Sarah Client',
+    name: 'Lerato Dlamini',
     idNumber: '8505125800082',
-    username: 'sarah_client',
+    username: 'lerato_dlamini',
     accountNumber: '6200000002',
-    password: 'Client@456',
+    password: 'Lerato@2024',
     role: 'customer'
   },
   {
-    name: 'Mike Payer',
+    name: 'Sipho Ndlovu',
     idNumber: '9203145800083',
-    username: 'mike_payer',
+    username: 'sipho_ndlovu',
     accountNumber: '6200000003',
-    password: 'Payer@789',
+    password: 'Sipho@2024',
     role: 'customer'
   },
   // Employee accounts
   {
-    name: 'Alice Employee',
+    name: 'Nomsa Khumalo',
     idNumber: '8807085800084',
-    username: 'alice_employee',
+    username: 'nomsa_khumalo',
     accountNumber: '6200000101',
-    password: 'Employee@123',
+    password: 'Nomsa@2024',
     role: 'employee'
   },
   {
-    name: 'Bob Staff',
+    name: 'Mandla Mthembu',
     idNumber: '9112155800085',
-    username: 'bob_staff',
+    username: 'mandla_mthembu',
     accountNumber: '6200000102',
-    password: 'Staff@456',
+    password: 'Mandla@2024',
     role: 'employee'
   }
 ];

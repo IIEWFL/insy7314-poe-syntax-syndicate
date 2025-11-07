@@ -66,18 +66,18 @@ const Home = () => {
                   Our platform ensures that your transactions are safe, efficient, and globally compliant.
                 </p>
                 <div className="d-flex flex-wrap gap-3">
-                  <Button 
-                    as={Link} 
-                    to="/register" 
+                  <Button
+                    as={Link}
+                    to="/login"
                     size="lg"
                     className="btn-primary-orange px-5 py-3"
                     style={{ fontSize: '1.1rem', borderRadius: '30px' }}
                   >
-                    Get Started <FaArrowRight className="ms-2" />
+                    Login to Portal <FaArrowRight className="ms-2" />
                   </Button>
-                  <Button 
-                    as={Link} 
-                    to="/login" 
+                  <Button
+                    as={Link}
+                    to="/login"
                     variant="outline-light" 
                     size="lg"
                     className="px-5 py-3"

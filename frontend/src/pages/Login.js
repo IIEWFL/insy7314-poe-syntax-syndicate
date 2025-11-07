@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Alert, Tab, Tabs } from 'react-bootstrap';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { validateField, sanitizeInput } from '../utils/validation';
-import SecurityNotice from '../components/SecurityNotice';
 import {
   FaUser,
   FaLock,
@@ -12,7 +11,8 @@ import {
   FaSignInAlt,
   FaShieldAlt,
   FaIdCard,
-  FaUserCircle
+  FaUserCircle,
+  FaBolt
 } from 'react-icons/fa';
 
 const Login = () => {
@@ -145,50 +145,73 @@ const Login = () => {
   };
 
   return (
-    <div className="login-page" style={{ paddingTop: '100px', minHeight: '100vh' }}>
+    <div className="login-page" style={{
+      paddingTop: '80px',
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    }}>
       <Container>
-        <Row className="justify-content-center align-items-center min-vh-100">
-          <Col lg={10} xl={8}>
-            <Row className="g-0 shadow-lg rounded-4 overflow-hidden bg-white">
+        <Row className="justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+          <Col lg={10} xl={9}>
+            <Row className="g-0 shadow-lg rounded-4 overflow-hidden" style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)'
+            }}>
               {/* Left Side - Welcome Section */}
               <Col lg={6} className="d-none d-lg-block">
-                <div 
+                <div
                   className="h-100 d-flex flex-column justify-content-center p-5 text-white position-relative"
                   style={{
-                    background: 'linear-gradient(135deg, var(--primary-orange) 0%, var(--secondary-orange) 100%)',
-                    minHeight: '600px'
+                    background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+                    minHeight: '650px'
                   }}
                 >
-                  <div className="position-relative z-index-1">
-                    <div className="mb-4">
-                      <FaShieldAlt style={{ fontSize: '4rem', opacity: 0.9 }} />
+                  <div className="position-relative" style={{ zIndex: 2 }}>
+                    <div className="mb-4 animate__animated animate__fadeInDown">
+                      <FaShieldAlt style={{ fontSize: '5rem', opacity: 0.95 }} />
                     </div>
-                    <h2 className="display-6 fw-bold mb-4">Welcome Back!</h2>
-                    <p className="lead mb-4" style={{ opacity: 0.9 }}>
-                      Access your secure international payment portal
+                    <h2 className="display-5 fw-bold mb-4 animate__animated animate__fadeInLeft">
+                      Secure Payment Portal
+                    </h2>
+                    <p className="lead mb-5 animate__animated animate__fadeInLeft" style={{
+                      opacity: 0.95,
+                      fontSize: '1.2rem',
+                      animationDelay: '0.2s'
+                    }}>
+                      Your trusted gateway to international payments
                     </p>
-                    <ul className="list-unstyled">
-                      <li className="mb-2">
-                        <FaShieldAlt className="me-2" />
-                        Bank-grade security
-                      </li>
-                      <li className="mb-2">
-                        <FaShieldAlt className="me-2" />
-                        SWIFT compliant transactions
-                      </li>
-                      <li className="mb-2">
-                        <FaShieldAlt className="me-2" />
-                        24/7 secure access
-                      </li>
-                    </ul>
+                    <div className="animate__animated animate__fadeInUp" style={{ animationDelay: '0.4s' }}>
+                      <div className="d-flex align-items-center mb-3 p-3 rounded" style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        backdropFilter: 'blur(5px)'
+                      }}>
+                        <FaShieldAlt className="me-3" style={{ fontSize: '1.5rem' }} />
+                        <span style={{ fontSize: '1.1rem' }}>Bank-grade encryption</span>
+                      </div>
+                      <div className="d-flex align-items-center mb-3 p-3 rounded" style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        backdropFilter: 'blur(5px)'
+                      }}>
+                        <FaLock className="me-3" style={{ fontSize: '1.5rem' }} />
+                        <span style={{ fontSize: '1.1rem' }}>SWIFT compliant</span>
+                      </div>
+                      <div className="d-flex align-items-center p-3 rounded" style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        backdropFilter: 'blur(5px)'
+                      }}>
+                        <FaBolt className="me-3" style={{ fontSize: '1.5rem' }} />
+                        <span style={{ fontSize: '1.1rem' }}>24/7 secure access</span>
+                      </div>
+                    </div>
                   </div>
-                  
-                  {/* Background Pattern */}
-                  <div 
+
+                  {/* Animated Background Pattern */}
+                  <div
                     className="position-absolute top-0 start-0 w-100 h-100"
                     style={{
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                      opacity: 0.3
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Cpath d='M50 50c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10zM10 10c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10S0 25.523 0 20s4.477-10 10-10zm10 8c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm40 40c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                      opacity: 0.4,
+                      zIndex: 1
                     }}
                   />
                 </div>
@@ -196,17 +219,35 @@ const Login = () => {
 
               {/* Right Side - Login Form */}
               <Col lg={6}>
-                <div className="p-5" style={{ minHeight: '600px' }}>
-                  <div className="text-center mb-4">
-                    <div className="mb-3">
-                      <FaSignInAlt className="text-primary-orange" style={{ fontSize: '3rem' }} />
+                <div className="p-5" style={{ minHeight: '650px' }}>
+                  <div className="text-center mb-5">
+                    <div className="mb-4 animate__animated animate__bounceIn">
+                      <div style={{
+                        width: '80px',
+                        height: '80px',
+                        margin: '0 auto',
+                        background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+                        borderRadius: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 10px 30px rgba(255, 107, 53, 0.3)'
+                      }}>
+                        <FaSignInAlt className="text-white" style={{ fontSize: '2.5rem' }} />
+                      </div>
                     </div>
-                    <h2 className="fw-bold text-primary-orange mb-2">Sign In</h2>
-                    <p className="text-muted">Access your secure payment portal</p>
+                    <h2 className="fw-bold mb-2" style={{
+                      fontSize: '2rem',
+                      background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent'
+                    }}>
+                      Welcome Back
+                    </h2>
+                    <p className="text-muted" style={{ fontSize: '1.1rem' }}>
+                      Sign in to access your account
+                    </p>
                   </div>
-
-                  {/* Security Notice */}
-                  <SecurityNotice />
 
                   {/* Alert Messages */}
                   {message.text && (
@@ -325,13 +366,11 @@ const Login = () => {
                     </Button>
                   </Form>
 
-                  {/* Register Link */}
-                  <div className="text-center pt-4 border-top">
-                    <p className="text-muted mb-0">
-                      Don't have an account?{' '}
-                      <Link to="/register" className="text-primary-orange fw-medium text-decoration-none">
-                        Create one here
-                      </Link>
+                  {/* Footer Note */}
+                  <div className="text-center pt-4 mt-4 border-top">
+                    <p className="text-muted mb-0" style={{ fontSize: '0.9rem' }}>
+                      <FaShieldAlt className="me-2" />
+                      Protected by enterprise-grade security
                     </p>
                   </div>
                 </div>

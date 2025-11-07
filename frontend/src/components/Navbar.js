@@ -76,29 +76,9 @@ const CustomNavbar = () => {
                   Home
                 </Nav.Link>
                 
-                <Nav.Link 
-                  as={Link} 
-                  to="/login" 
-                  className="text-white fw-medium px-3 py-2 rounded transition-all"
-                  onClick={handleNavClick}
-                  style={{ 
-                    transition: 'all 0.3s ease',
-                    textDecoration: 'none'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <FaShieldAlt className="me-1" />
-                  Login
-                </Nav.Link>
-
                 <Button
                   as={Link}
-                  to="/register"
+                  to="/login"
                   variant="outline-light"
                   className="ms-2 fw-medium px-4 py-2"
                   onClick={handleNavClick}
@@ -118,17 +98,18 @@ const CustomNavbar = () => {
                     e.target.style.transform = 'translateY(0)';
                   }}
                 >
-                  Get Started
+                  <FaShieldAlt className="me-1" />
+                  Login
                 </Button>
               </>
             ) : (
               <>
-                <Nav.Link 
-                  as={Link} 
-                  to="/dashboard" 
+                <Nav.Link
+                  as={Link}
+                  to={user?.role === 'employee' ? '/employee-dashboard' : '/dashboard'}
                   className="text-white fw-medium px-3 py-2 rounded transition-all"
                   onClick={handleNavClick}
-                  style={{ 
+                  style={{
                     transition: 'all 0.3s ease',
                     textDecoration: 'none'
                   }}
@@ -145,7 +126,7 @@ const CustomNavbar = () => {
                 <div className="d-flex align-items-center text-white ms-3 me-3">
                   <FaUser className="me-2" />
                   <span className="fw-medium">
-                    {user?.name || 'User'}
+                    {user?.name || 'User'} {user?.role === 'employee' && '(Employee)'}
                   </span>
                 </div>
 

@@ -11,9 +11,13 @@ const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const ExpressBrute = require('express-brute');
 const mongoose = require('mongoose');
-const userRoutes = require('./routes/user');
 
 dotenv.config();
+
+// Require routes AFTER loading env so they can access process.env reliably
+const userRoutes = require('./routes/user');
+const paymentRoutes = require('./routes/payment');
+
 const app = express();
 
 console.log('🚀 INSY7314 Task 3 - Employee Portal with MongoDB');
@@ -102,10 +106,6 @@ const userBruteforce = new ExpressBrute(store, {
   }
 });
 
-// INSY7314 Task 2: Using in-memory storage only
-// All user data stored in RAM - perfect for security demonstration
-console.log('💾 Using in-memory storage for user data');
-
 // Routes (apply stricter limits and brute force protection on auth)
 app.use('/api/user/login', authLimiter, bruteforce.prevent, userBruteforce.getMiddleware({
   key: function(req, res, next) {
@@ -115,6 +115,7 @@ app.use('/api/user/login', authLimiter, bruteforce.prevent, userBruteforce.getMi
 }));
 app.use('/api/user/register', authLimiter, bruteforce.prevent);
 app.use('/api/user', userRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Alias mounts to support dev proxy paths without /api prefix
 app.use('/user/login', authLimiter, bruteforce.prevent, userBruteforce.getMiddleware({
@@ -125,6 +126,7 @@ app.use('/user/login', authLimiter, bruteforce.prevent, userBruteforce.getMiddle
 }));
 app.use('/user/register', authLimiter, bruteforce.prevent);
 app.use('/user', userRoutes);
+app.use('/payment', paymentRoutes);
 
 // Start the server (HTTPS or HTTP based on environment)
 const PORT = process.env.PORT || 5000;

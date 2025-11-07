@@ -1,0 +1,45 @@
+.payment-page {
+  min-height: 100vh;
+  padding-bottom: 50px;
+}
+
+.payment-page .card {
+  border-radius: 15px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.payment-page .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+}
+
+.payment-page .form-control:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.payment-page .btn-primary {
+  transition: all 0.3s ease;
+}
+
+.payment-page .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.payment-page .table {
+  font-size: 0.9rem;
+}
+
+.payment-page .table thead {
+  background-color: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.payment-page .badge {
+  font-size: 0.85rem;
+  padding: 0.4em 0.8em;
+}
+

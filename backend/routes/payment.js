@@ -23,57 +23,93 @@ const isEmployee = (req, res, next) => {
 
 // Create new payment (Customer only)
 router.post('/create', authenticateToken, async (req, res) => {
-  const { beneficiary, beneficiaryBank, beneficiaryAccount, amount, swiftCode, description } = req.body;
+  const { paymentType, beneficiaryAccount, beneficiary, beneficiaryBank, amount, swiftCode, description } = req.body;
 
-  // Validate all required fields
-  if (!beneficiary || !beneficiaryBank || !beneficiaryAccount || !amount || !swiftCode || !description) {
-    return res.status(400).json({ error: 'All fields are required' });
+  // Validate common required fields
+  if (!paymentType || !beneficiaryAccount || !amount || !description) {
+    return res.status(400).json({ error: 'Payment type, account, amount, and description are required' });
   }
 
-  // Whitelist validation
-  if (!patterns.beneficiary.test(beneficiary)) {
-    return res.status(400).json({ error: 'Invalid beneficiary name format' });
+  // Validate payment type
+  if (!['internal', 'international'].includes(paymentType)) {
+    return res.status(400).json({ error: 'Invalid payment type. Must be internal or international' });
   }
-  if (!patterns.beneficiaryBank.test(beneficiaryBank)) {
-    return res.status(400).json({ error: 'Invalid bank name format' });
-  }
+
+  // Validate account number format
   if (!patterns.beneficiaryAccount.test(beneficiaryAccount)) {
     return res.status(400).json({ error: 'Invalid account number format' });
   }
-  if (!patterns.amount.test(amount.toString())) {
-    return res.status(400).json({ error: 'Invalid amount format' });
+
+  // Validate amount
+  if (!patterns.amount.test(amount.toString()) || parseFloat(amount) <= 0) {
+    return res.status(400).json({ error: 'Amount must be a positive number with up to 2 decimal places' });
   }
-  if (!patterns.swiftCode.test(swiftCode)) {
-    return res.status(400).json({ error: 'Invalid SWIFT code format' });
-  }
+
+  // Validate description
   if (!patterns.description.test(description)) {
     return res.status(400).json({ error: 'Invalid description format' });
   }
 
-  // Validate amount is positive
-  if (parseFloat(amount) <= 0) {
-    return res.status(400).json({ error: 'Amount must be greater than zero' });
-  }
-
   try {
-    const payment = new Payment({
+    const User = require('../models/User');
+    let paymentData = {
       userId: req.user.id,
-      beneficiary,
-      beneficiaryBank,
+      paymentType,
       beneficiaryAccount,
       amount: parseFloat(amount),
-      swiftCode: swiftCode.toUpperCase(),
       description,
       status: 'Pending'
-    });
+    };
 
+    if (paymentType === 'internal') {
+      // Internal transfer - find recipient by account number
+      const recipient = await User.findOne({ accountNumber: beneficiaryAccount });
+
+      if (!recipient) {
+        return res.status(404).json({ error: 'Recipient account not found in our system' });
+      }
+
+      if (recipient._id.toString() === req.user.id) {
+        return res.status(400).json({ error: 'Cannot transfer to your own account' });
+      }
+
+      paymentData.recipientId = recipient._id;
+      paymentData.beneficiary = recipient.name;
+
+    } else {
+      // International payment - validate SWIFT fields
+      if (!beneficiary || !beneficiaryBank || !swiftCode) {
+        return res.status(400).json({ error: 'Beneficiary name, bank, and SWIFT code are required for international payments' });
+      }
+
+      if (!patterns.beneficiary.test(beneficiary)) {
+        return res.status(400).json({ error: 'Invalid beneficiary name format' });
+      }
+      if (!patterns.beneficiaryBank.test(beneficiaryBank)) {
+        return res.status(400).json({ error: 'Invalid bank name format' });
+      }
+      if (!patterns.swiftCode.test(swiftCode)) {
+        return res.status(400).json({ error: 'Invalid SWIFT code format' });
+      }
+
+      paymentData.beneficiary = beneficiary;
+      paymentData.beneficiaryBank = beneficiaryBank;
+      paymentData.swiftCode = swiftCode.toUpperCase();
+    }
+
+    const payment = new Payment(paymentData);
     await payment.save();
+
+    // Populate recipient info for response
+    await payment.populate('recipientId', 'name username accountNumber');
 
     res.status(201).json({
       message: 'Payment request submitted successfully',
       payment: {
         id: payment._id,
+        paymentType: payment.paymentType,
         beneficiary: payment.beneficiary,
+        beneficiaryAccount: payment.beneficiaryAccount,
         amount: payment.amount,
         status: payment.status,
         createdAt: payment.createdAt
@@ -91,6 +127,7 @@ router.get('/my-payments', authenticateToken, async (req, res) => {
     const payments = await Payment.find({ userId: req.user.id })
       .sort({ createdAt: -1 })
       .populate('userId', 'name username accountNumber')
+      .populate('recipientId', 'name username accountNumber')
       .populate('verifiedBy', 'name username');
 
     res.json(payments);
@@ -106,6 +143,7 @@ router.get('/all', authenticateToken, isEmployee, async (req, res) => {
     const payments = await Payment.find()
       .sort({ createdAt: -1 })
       .populate('userId', 'name username accountNumber')
+      .populate('recipientId', 'name username accountNumber')
       .populate('verifiedBy', 'name username');
 
     res.json(payments);
@@ -120,7 +158,8 @@ router.get('/pending', authenticateToken, isEmployee, async (req, res) => {
   try {
     const payments = await Payment.find({ status: 'Pending' })
       .sort({ createdAt: -1 })
-      .populate('userId', 'name username accountNumber');
+      .populate('userId', 'name username accountNumber')
+      .populate('recipientId', 'name username accountNumber');
 
     res.json(payments);
   } catch (error) {
