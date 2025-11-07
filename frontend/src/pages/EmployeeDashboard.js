@@ -13,16 +13,12 @@ const EmployeeDashboard = () => {
   const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
   const [processingId, setProcessingId] = useState(null);
 
-  useEffect(() => {
-    fetchPayments();
-  }, [filter]);
-
-  const fetchPayments = async () => {
+  const fetchPayments = React.useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
       const endpoint = filter === 'pending' ? '/api/payment/pending' : '/api/payment/all';
-      
+
       const response = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -40,7 +36,11 @@ const EmployeeDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchPayments();
+  }, [fetchPayments]);
 
   const handleVerifyPayment = async (paymentId, status) => {
     if (!window.confirm(`Are you sure you want to ${status.toLowerCase()} this payment?`)) {
