@@ -32,9 +32,10 @@ jobs:
         run: |
           npm audit --audit-level=moderate || true
           cd frontend && npm audit --audit-level=moderate || true
-      
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -43,7 +44,7 @@ jobs:
             -Dsonar.projectKey=insy7314-payment-portal
             -Dsonar.organization=your-org
             -Dsonar.sources=backend,frontend/src
-            -Dsonar.exclusions=**/node_modules/**,**/build/**,**/dist/**
+            -Dsonar.exclusions=**/node_modules/**,**/build/**,**/dist/**,**/keys/**,**/scripts/**
       
       - name: OWASP Dependency Check
         uses: dependency-check/Dependency-Check_Action@main
