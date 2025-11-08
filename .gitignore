@@ -81,7 +81,7 @@ dist
 
 # Gatsby files
 .cache/
-public
+# public - COMMENTED OUT: We need frontend/public for React app
 
 # Vuepress build output
 .vuepress/dist

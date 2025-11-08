@@ -130,12 +130,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
+
+      - name: Verify frontend structure
+        run: |
+          echo "Checking frontend directory structure..."
+          ls -la frontend/
+          echo "Checking frontend/public directory..."
+          ls -la frontend/public/
+          echo "Checking if index.html exists..."
+          test -f frontend/public/index.html && echo "✓ index.html found" || echo "✗ index.html NOT found"
 
       - name: Install dependencies
         run: |
